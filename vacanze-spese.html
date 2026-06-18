@@ -51,10 +51,10 @@ label{font-size:13px;color:var(--b600);font-weight:500;display:block;margin-bott
 .bpos{color:#27AE60;font-weight:600;}.bneg{color:#E74C3C;font-weight:600;}
 .trrow{padding:10px 0;font-size:14px;border-bottom:1px solid var(--b50);display:flex;align-items:center;gap:8px;}
 .trrow:last-child{border-bottom:none;}
-.mgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px;}
+.mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px;}
 .metric{background:var(--b50);border-radius:var(--rmd);padding:14px;}
 .mlbl{font-size:11px;color:var(--b600);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;}
-.mval{font-size:21px;font-weight:600;color:var(--b800);}
+.mval{font-size:18px;font-weight:600;color:var(--b800);}
 .nav{display:flex;gap:6px;margin-bottom:18px;background:var(--b50);border-radius:var(--rmd);padding:5px;}
 .nbtn{flex:1;padding:10px 4px;font-size:13px;font-weight:500;border:none;border-radius:var(--rsm);background:transparent;color:var(--b600);cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .nbtn.on{background:#fff;color:var(--b800);box-shadow:0 1px 4px rgba(91,168,245,0.15);}
@@ -158,6 +158,7 @@ label{font-size:13px;color:var(--b600);font-weight:500;display:block;margin-bott
     <div class="mgrid">
       <div class="metric"><div class="mlbl">Totale</div><div class="mval" id="mtot">0</div></div>
       <div class="metric"><div class="mlbl">Spese</div><div class="mval" id="mcnt">0</div></div>
+      <div class="metric"><div class="mlbl">Pro capite</div><div class="mval" id="mpc">0</div></div>
     </div>
     <button class="btn btnp" id="btn-add-exp"><i class="ti ti-plus"></i> Aggiungi spesa</button>
     <div class="card" style="padding:0.5rem 1.25rem;" id="explist"></div>
@@ -183,7 +184,7 @@ label{font-size:13px;color:var(--b600);font-weight:500;display:block;margin-bott
     <label>Importo</label>
     <div class="row" style="margin-bottom:12px;"><input type="number" id="eamt" placeholder="0.00" step="0.01" style="flex:1;margin-bottom:0;"><select id="ecur" style="width:130px;margin-bottom:0;"></select></div>
     <div id="convinfo" style="font-size:13px;color:var(--b600);margin-bottom:10px;min-height:18px;"></div>
-    <label>Pagato da</label><select id="epay"></select>
+    <label>Data spesa</label><input type="date" id="edate"><label>Pagato da</label><select id="epay"></select>
   </div>
   <div class="card">
     <div class="st">Divide tra</div>
@@ -434,12 +435,15 @@ function renderExps(){
   const tot=(t.exps||[]).reduce((s,e)=>s+(e.eur||0),0);
   document.getElementById('mtot').textContent=t.cur+' '+tot.toFixed(2);
   document.getElementById('mcnt').textContent=(t.exps||[]).length;
+  const pc=t.parts&&t.parts.length>0?tot/t.parts.length:0;
+  document.getElementById('mpc').textContent=t.cur+' '+pc.toFixed(2);
   const el=document.getElementById('explist');
   if(!(t.exps||[]).length){el.innerHTML='<div style="padding:1rem 0;text-align:center;color:#666;font-size:14px;">Nessuna spesa ancora</div>';return;}
-  el.innerHTML=t.exps.slice().reverse().map((e,ri)=>{
-    const i=t.exps.length-1-ri;const c=catBy(e.cat);
+  const sorted=[...t.exps].map((e,i)=>({...e,_i:i})).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  el.innerHTML=sorted.map((e,ri)=>{
+    const i=e._i;const c=catBy(e.cat);
     const orig=e.ocur!==t.cur?` (${e.ocur} ${e.oamt.toFixed(2)})`:'';
-    return`<div class="expitem"><div class="expmain"><div style="min-width:0;flex:1;"><span class="catbadge" style="background:${c.bg};color:${c.t};">${c.l}</span><span style="font-size:15px;font-weight:500;">${e.desc}</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;"><div style="font-size:15px;font-weight:600;color:var(--b600);">${t.cur} ${e.eur.toFixed(2)}</div><span class="del-exp" data-i="${i}" style="cursor:pointer;color:#E74C3C;font-size:20px;line-height:1;">&times;</span></div></div><div class="expmeta">Pagato da <b>${e.payer}</b>${orig} · Divide: ${e.parts.join(', ')}</div></div>`;
+    return`<div class="expitem"><div class="expmain"><div style="min-width:0;flex:1;"><span class="catbadge" style="background:${c.bg};color:${c.t};">${c.l}</span><span style="font-size:15px;font-weight:500;">${e.desc}</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;"><div style="font-size:15px;font-weight:600;color:var(--b600);">${t.cur} ${e.eur.toFixed(2)}</div><span class="del-exp" data-i="${i}" style="cursor:pointer;color:#E74C3C;font-size:20px;line-height:1;">&times;</span></div></div><div class="expmeta"><b>${e.displayDate||e.date||''}</b> · Pagato da <b>${e.payer}</b>${orig} · Divide: ${e.parts.join(', ')}</div></div>`;
   }).join('');
   document.querySelectorAll('.del-exp').forEach(el=>{el.addEventListener('click',function(){delExp(parseInt(this.dataset.i));});});
 }
@@ -452,6 +456,8 @@ function renderExpForm(){
   document.getElementById('ecur').innerHTML=curOpts(t.cur);
   document.getElementById('eparts').innerHTML=t.parts.map(p=>`<div class="chkrow"><input type="checkbox" id="ck-${p}" value="${p}" checked><label for="ck-${p}">${p}</label></div>`).join('');
   document.getElementById('ed').value='';document.getElementById('eamt').value='';document.getElementById('convinfo').textContent='';
+  // Set today's date as default
+  const today=new Date().toISOString().split('T')[0];document.getElementById('edate').value=today;
 }
 function selAll(v){document.querySelectorAll('#eparts input[type=checkbox]').forEach(c=>c.checked=v);}
 
@@ -473,6 +479,7 @@ async function addExp(){
   const amt=parseFloat(document.getElementById('eamt').value);
   const from=document.getElementById('ecur').value;
   const payer=document.getElementById('epay').value;
+  const expdate=document.getElementById('edate').value||new Date().toISOString().split('T')[0];
   const parts=Array.from(document.querySelectorAll('#eparts input:checked')).map(c=>c.value);
   if(!desc){alert('Inserisci una descrizione');return;}
   if(!amt||amt<=0){alert('Inserisci un importo valido');return;}
@@ -480,7 +487,7 @@ async function addExp(){
   const btn=document.getElementById('btn-save-exp');btn.textContent='Salvataggio...';
   const rate=await getR(from,t.cur);
   if(from!==t.cur&&!rate){alert('Impossibile ottenere il cambio. Riprova.');btn.innerHTML='<i class="ti ti-check"></i> Salva spesa';return;}
-  t.exps.push({desc,cat,oamt:amt,ocur:from,eur:rate?amt*rate:amt,payer,parts,date:new Date().toLocaleDateString('it-IT')});
+  t.exps.push({desc,cat,oamt:amt,ocur:from,eur:rate?amt*rate:amt,payer,parts,date:expdate,displayDate:new Date(expdate+'T00:00:00').toLocaleDateString('it-IT')});
   save();btn.innerHTML='<i class="ti ti-check"></i> Salva spesa';go('s-trip');
 }
 
