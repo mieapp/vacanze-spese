@@ -89,6 +89,8 @@ label{font-size:13px;color:var(--b600);font-weight:500;display:block;margin-bott
 .expitem:last-child{border-bottom:none;}
 .expmain{display:flex;justify-content:space-between;align-items:flex-start;}
 .expmeta{font-size:12px;color:#666;margin-top:3px;}
+.paybtn{flex:1;padding:10px 8px;border:2px solid var(--b100);border-radius:var(--rmd);background:var(--b50);color:var(--b800);font-size:14px;font-weight:500;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;}
+.paybtn.active{border-color:var(--b400);background:var(--EBF4FF);color:var(--b800);box-shadow:0 0 0 3px rgba(91,168,245,0.3);}
 .dbadge{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--b600);background:var(--b50);border-radius:8px;padding:5px 12px;margin-bottom:12px;}
 </style>
 </head>
@@ -184,7 +186,7 @@ label{font-size:13px;color:var(--b600);font-weight:500;display:block;margin-bott
     <label>Importo</label>
     <div class="row" style="margin-bottom:12px;"><input type="number" id="eamt" placeholder="0.00" step="0.01" style="flex:1;margin-bottom:0;"><select id="ecur" style="width:130px;margin-bottom:0;"></select></div>
     <div id="convinfo" style="font-size:13px;color:var(--b600);margin-bottom:10px;min-height:18px;"></div>
-    <label>Data spesa</label><input type="date" id="edate"><label>Pagato da</label><select id="epay"></select>
+    <label>Data spesa</label><input type="date" id="edate"><label>Metodo di pagamento</label><div style="display:flex;gap:10px;margin-bottom:12px;" id="paymethod"><button type="button" class="paybtn active" id="pm-cash" onclick="setPM('cash')"><div style='display:flex;align-items:center;justify-content:center;gap:8px;'><svg width="52" height="36" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="56" rx="6" fill="#003399"/><circle cx="40" cy="28" r="18" fill="#FFD700" opacity="0.15"/><circle cx="40" cy="28" r="14" fill="#FFD700"/><text x="40" y="35" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="900" fill="#003399">€</text><circle cx="8" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="8" cy="48" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="48" r="3" fill="#FFD700" opacity="0.4"/></svg><span>Contanti</span></div></button><button type="button" class="paybtn" id="pm-card" onclick="setPM('card')"><div style='display:flex;align-items:center;justify-content:center;gap:8px;'><svg width="52" height="36" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gld2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#C9A84C"/><stop offset="50%" style="stop-color:#F5D17A"/><stop offset="100%" style="stop-color:#A67C2E"/></linearGradient></defs><rect width="80" height="56" rx="6" fill="url(#gld2)"/><rect x="0" y="16" width="80" height="12" fill="#5A3E00" opacity="0.5"/><rect x="8" y="6" width="16" height="12" rx="2" fill="#C9A84C" stroke="#A67C2E" stroke-width="1"/><rect x="10" y="8" width="12" height="8" rx="1" fill="#F5D17A"/><line x1="14" y1="8" x2="14" y2="16" stroke="#A67C2E" stroke-width="0.8"/><line x1="8" y1="12" x2="24" y2="12" stroke="#A67C2E" stroke-width="0.8"/><rect x="8" y="34" width="40" height="3" rx="1.5" fill="#fff" opacity="0.6"/><rect x="8" y="42" width="24" height="3" rx="1.5" fill="#fff" opacity="0.4"/><path d="M62 28 Q66 24 66 28 Q66 32 62 28" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.8"/><path d="M59 26 Q65 22 65 28 Q65 34 59 30" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.6"/></svg><span>Carta</span></div></button></div><label>Pagato da</label><select id="epay"></select>
   </div>
   <div class="card">
     <div class="st">Divide tra</div>
@@ -237,7 +239,8 @@ function fd(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return d+'/'+m+'/'
 function fdr(s,e){if(!s&&!e)return'';if(s&&e)return fd(s)+' → '+fd(e);if(s)return'Dal '+fd(s);return'Fino al '+fd(e);}
 function calcDur(s,e){if(!s||!e)return null;const d=Math.round((new Date(e)-new Date(s))/864e5);return d>0?d:null;}
 
-let trips=[],curId=null,nps=[],ngs=[],pgn='',pgm=[],pcd=null,pct=null,rc={};
+function setPM(v){curPM=v;document.querySelectorAll('.paybtn').forEach(b=>b.classList.remove('active'));document.getElementById('pm-'+v).classList.add('active');}
+let trips=[],curId=null,nps=[],ngs=[],pgn='',pgm=[],pcd=null,pct=null,rc={},curPM='cash';
 
 function save(){try{localStorage.setItem(SK,JSON.stringify(trips));}catch(e){}}
 function load(){try{const d=localStorage.getItem(SK);if(d)trips=JSON.parse(d);}catch(e){}}
@@ -443,7 +446,7 @@ function renderExps(){
   el.innerHTML=sorted.map((e,ri)=>{
     const i=e._i;const c=catBy(e.cat);
     const orig=e.ocur!==t.cur?` (${e.ocur} ${e.oamt.toFixed(2)})`:'';
-    return`<div class="expitem"><div class="expmain"><div style="min-width:0;flex:1;"><span class="catbadge" style="background:${c.bg};color:${c.t};">${c.l}</span><span style="font-size:15px;font-weight:500;">${e.desc}</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;"><div style="font-size:15px;font-weight:600;color:var(--b600);">${t.cur} ${e.eur.toFixed(2)}</div><span class="del-exp" data-i="${i}" style="cursor:pointer;color:#E74C3C;font-size:20px;line-height:1;">&times;</span></div></div><div class="expmeta"><b>${e.displayDate||e.date||''}</b> · Pagato da <b>${e.payer}</b>${orig} · Divide: ${e.parts.join(', ')}</div></div>`;
+    return`<div class="expitem"><div class="expmain"><div style="min-width:0;flex:1;"><span class="catbadge" style="background:${c.bg};color:${c.t};">${c.l}</span><span style="font-size:15px;font-weight:500;">${e.desc}</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;"><div style="font-size:15px;font-weight:600;color:var(--b600);">${t.cur} ${e.eur.toFixed(2)}</div><span class="del-exp" data-i="${i}" style="cursor:pointer;color:#E74C3C;font-size:20px;line-height:1;">&times;</span></div></div><div class="expmeta"><b>${e.displayDate||e.date||''}</b> · ${e.pm==='card'?'<svg width="40" height="28" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gld" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#C9A84C"/><stop offset="50%" style="stop-color:#F5D17A"/><stop offset="100%" style="stop-color:#A67C2E"/></linearGradient></defs><rect width="80" height="56" rx="6" fill="url(#gld)"/><rect x="0" y="16" width="80" height="12" fill="#5A3E00" opacity="0.5"/><rect x="8" y="6" width="16" height="12" rx="2" fill="#C9A84C" stroke="#A67C2E" stroke-width="1"/><rect x="10" y="8" width="12" height="8" rx="1" fill="#F5D17A"/><line x1="14" y1="8" x2="14" y2="16" stroke="#A67C2E" stroke-width="0.8"/><line x1="8" y1="12" x2="24" y2="12" stroke="#A67C2E" stroke-width="0.8"/><rect x="8" y="34" width="40" height="3" rx="1.5" fill="#fff" opacity="0.6"/><rect x="8" y="42" width="24" height="3" rx="1.5" fill="#fff" opacity="0.4"/><path d="M62 28 Q66 24 66 28 Q66 32 62 28" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.8"/><path d="M59 26 Q65 22 65 28 Q65 34 59 30" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.6"/></svg>':'<svg width="40" height="28" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="56" rx="6" fill="#003399"/><circle cx="40" cy="28" r="18" fill="#FFD700" opacity="0.15"/><circle cx="40" cy="28" r="14" fill="#FFD700"/><text x="40" y="35" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="900" fill="#003399">€</text><circle cx="8" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="8" cy="48" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="48" r="3" fill="#FFD700" opacity="0.4"/></svg>'} · Pagato da <b>${e.payer}</b>${orig} · Divide: ${e.parts.join(', ')}</div></div>`;
   }).join('');
   document.querySelectorAll('.del-exp').forEach(el=>{el.addEventListener('click',function(){delExp(parseInt(this.dataset.i));});});
 }
@@ -458,6 +461,7 @@ function renderExpForm(){
   document.getElementById('ed').value='';document.getElementById('eamt').value='';document.getElementById('convinfo').textContent='';
   // Set today's date as default
   const today=new Date().toISOString().split('T')[0];document.getElementById('edate').value=today;
+  curPM='cash';document.querySelectorAll('.paybtn').forEach(b=>b.classList.remove('active'));document.getElementById('pm-cash').classList.add('active');
 }
 function selAll(v){document.querySelectorAll('#eparts input[type=checkbox]').forEach(c=>c.checked=v);}
 
@@ -480,6 +484,7 @@ async function addExp(){
   const from=document.getElementById('ecur').value;
   const payer=document.getElementById('epay').value;
   const expdate=document.getElementById('edate').value||new Date().toISOString().split('T')[0];
+  const pm=curPM;
   const parts=Array.from(document.querySelectorAll('#eparts input:checked')).map(c=>c.value);
   if(!desc){alert('Inserisci una descrizione');return;}
   if(!amt||amt<=0){alert('Inserisci un importo valido');return;}
@@ -487,7 +492,7 @@ async function addExp(){
   const btn=document.getElementById('btn-save-exp');btn.textContent='Salvataggio...';
   const rate=await getR(from,t.cur);
   if(from!==t.cur&&!rate){alert('Impossibile ottenere il cambio. Riprova.');btn.innerHTML='<i class="ti ti-check"></i> Salva spesa';return;}
-  t.exps.push({desc,cat,oamt:amt,ocur:from,eur:rate?amt*rate:amt,payer,parts,date:expdate,displayDate:new Date(expdate+'T00:00:00').toLocaleDateString('it-IT')});
+  t.exps.push({desc,cat,oamt:amt,ocur:from,eur:rate?amt*rate:amt,payer,parts,date:expdate,displayDate:new Date(expdate+'T00:00:00').toLocaleDateString('it-IT'),pm});
   save();btn.innerHTML='<i class="ti ti-check"></i> Salva spesa';go('s-trip');
 }
 
@@ -543,14 +548,14 @@ function shareWA(){
   txt+=`\n*Spese per categoria:*\n`;
   CAT.filter(c=>ct[c.id]>0).sort((a,b)=>ct[b.id]-ct[a.id]).forEach(c=>{txt+=`• ${c.l}: ${t.cur} ${ct[c.id].toFixed(2)} (${((ct[c.id]/tot)*100).toFixed(0)}%)\n`;});
   txt+=`\n*Dettaglio spese:*\n`;
-  (t.exps||[]).forEach(e=>{txt+=`• [${catBy(e.cat).l}] ${e.desc}: ${t.cur} ${e.eur.toFixed(2)} (pagato da ${e.payer})\n`;});
+  (t.exps||[]).forEach(e=>{txt+=`• [${catBy(e.cat).l}] ${e.pm==='card'?'<svg width="40" height="28" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gld" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#C9A84C"/><stop offset="50%" style="stop-color:#F5D17A"/><stop offset="100%" style="stop-color:#A67C2E"/></linearGradient></defs><rect width="80" height="56" rx="6" fill="url(#gld)"/><rect x="0" y="16" width="80" height="12" fill="#5A3E00" opacity="0.5"/><rect x="8" y="6" width="16" height="12" rx="2" fill="#C9A84C" stroke="#A67C2E" stroke-width="1"/><rect x="10" y="8" width="12" height="8" rx="1" fill="#F5D17A"/><line x1="14" y1="8" x2="14" y2="16" stroke="#A67C2E" stroke-width="0.8"/><line x1="8" y1="12" x2="24" y2="12" stroke="#A67C2E" stroke-width="0.8"/><rect x="8" y="34" width="40" height="3" rx="1.5" fill="#fff" opacity="0.6"/><rect x="8" y="42" width="24" height="3" rx="1.5" fill="#fff" opacity="0.4"/><path d="M62 28 Q66 24 66 28 Q66 32 62 28" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.8"/><path d="M59 26 Q65 22 65 28 Q65 34 59 30" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.6"/></svg>':'<svg width="40" height="28" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="56" rx="6" fill="#003399"/><circle cx="40" cy="28" r="18" fill="#FFD700" opacity="0.15"/><circle cx="40" cy="28" r="14" fill="#FFD700"/><text x="40" y="35" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="900" fill="#003399">€</text><circle cx="8" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="8" cy="48" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="48" r="3" fill="#FFD700" opacity="0.4"/></svg>'} ${e.desc}: ${t.cur} ${e.eur.toFixed(2)} (pagato da ${e.payer})\n`;});
   try{navigator.clipboard.writeText(txt);}catch(x){}
   document.getElementById('expfb').innerHTML='<div class="aok">Testo copiato! Incollalo su WhatsApp.</div>';
   setTimeout(()=>{document.getElementById('expfb').innerHTML='';},3000);
 }
 function expCSV(){
-  const t=CT();let csv='Data,Categoria,Descrizione,Valuta originale,Importo originale,'+t.cur+',Pagato da,Partecipanti\n';
-  (t.exps||[]).forEach(e=>{csv+=`"${e.date}","${catBy(e.cat).l}","${e.desc}","${e.ocur}",${e.oamt.toFixed(2)},${e.eur.toFixed(2)},"${e.payer}","${e.parts.join('; ')}"\n`;});
+  const t=CT();let csv='Data,Categoria,Descrizione,Metodo,Valuta originale,Importo originale,'+t.cur+',Pagato da,Partecipanti\n';
+  (t.exps||[]).forEach(e=>{csv+=`"${e.date}","${catBy(e.cat).l}","${e.desc}","${e.pm==='card'?'Carta':'Contanti'}","${e.ocur}",${e.oamt.toFixed(2)},${e.eur.toFixed(2)},"${e.payer}","${e.parts.join('; ')}"\n`;});
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
   a.download=t.name.replace(/\s+/g,'_')+'_spese.csv';a.click();
   document.getElementById('expfb').innerHTML='<div class="aok">CSV scaricato!</div>';
