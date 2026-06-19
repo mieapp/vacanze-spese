@@ -240,7 +240,7 @@ function fdr(s,e){if(!s&&!e)return'';if(s&&e)return fd(s)+' → '+fd(e);if(s)ret
 function calcDur(s,e){if(!s||!e)return null;const d=Math.round((new Date(e)-new Date(s))/864e5);return d>0?d:null;}
 
 function setPM(v){curPM=v;document.querySelectorAll('.paybtn').forEach(b=>b.classList.remove('active'));document.getElementById('pm-'+v).classList.add('active');}
-let trips=[],curId=null,nps=[],ngs=[],pgn='',pgm=[],pcd=null,pct=null,rc={},curPM='cash';
+let trips=[],curId=null,nps=[],ngs=[],pgn='',pgm=[],pcd=null,pct=null,rc={},curPM='cash',editIdx=-1;
 
 function save(){try{localStorage.setItem(SK,JSON.stringify(trips));}catch(e){}}
 function load(){try{const d=localStorage.getItem(SK);if(d)trips=JSON.parse(d);}catch(e){}}
@@ -446,9 +446,10 @@ function renderExps(){
   el.innerHTML=sorted.map((e,ri)=>{
     const i=e._i;const c=catBy(e.cat);
     const orig=e.ocur!==t.cur?` (${e.ocur} ${e.oamt.toFixed(2)})`:'';
-    return`<div class="expitem"><div class="expmain"><div style="min-width:0;flex:1;"><span class="catbadge" style="background:${c.bg};color:${c.t};">${c.l}</span><span style="font-size:15px;font-weight:500;">${e.desc}</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;"><div style="font-size:15px;font-weight:600;color:var(--b600);">${t.cur} ${e.eur.toFixed(2)}</div><span class="del-exp" data-i="${i}" style="cursor:pointer;color:#E74C3C;font-size:20px;line-height:1;">&times;</span></div></div><div class="expmeta"><b>${e.displayDate||e.date||''}</b> · ${e.pm==='card'?'<svg width="40" height="28" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gld" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#C9A84C"/><stop offset="50%" style="stop-color:#F5D17A"/><stop offset="100%" style="stop-color:#A67C2E"/></linearGradient></defs><rect width="80" height="56" rx="6" fill="url(#gld)"/><rect x="0" y="16" width="80" height="12" fill="#5A3E00" opacity="0.5"/><rect x="8" y="6" width="16" height="12" rx="2" fill="#C9A84C" stroke="#A67C2E" stroke-width="1"/><rect x="10" y="8" width="12" height="8" rx="1" fill="#F5D17A"/><line x1="14" y1="8" x2="14" y2="16" stroke="#A67C2E" stroke-width="0.8"/><line x1="8" y1="12" x2="24" y2="12" stroke="#A67C2E" stroke-width="0.8"/><rect x="8" y="34" width="40" height="3" rx="1.5" fill="#fff" opacity="0.6"/><rect x="8" y="42" width="24" height="3" rx="1.5" fill="#fff" opacity="0.4"/><path d="M62 28 Q66 24 66 28 Q66 32 62 28" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.8"/><path d="M59 26 Q65 22 65 28 Q65 34 59 30" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.6"/></svg>':'<svg width="40" height="28" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="56" rx="6" fill="#003399"/><circle cx="40" cy="28" r="18" fill="#FFD700" opacity="0.15"/><circle cx="40" cy="28" r="14" fill="#FFD700"/><text x="40" y="35" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="900" fill="#003399">€</text><circle cx="8" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="8" cy="48" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="48" r="3" fill="#FFD700" opacity="0.4"/></svg>'} · Pagato da <b>${e.payer}</b>${orig} · Divide: ${e.parts.join(', ')}</div></div>`;
+    return`<div class="expitem"><div class="expmain"><div style="min-width:0;flex:1;"><span class="catbadge" style="background:${c.bg};color:${c.t};">${c.l}</span><span style="font-size:15px;font-weight:500;">${e.desc}</span></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;"><div style="font-size:15px;font-weight:600;color:var(--b600);">${t.cur} ${e.eur.toFixed(2)}</div><span class="edit-exp" data-i="${i}" style="cursor:pointer;color:var(--b600);font-size:16px;line-height:1;margin-right:2px;"><i class="ti ti-pencil"></i></span><span class="del-exp" data-i="${i}" style="cursor:pointer;color:#E74C3C;font-size:20px;line-height:1;">&times;</span></div></div><div class="expmeta"><b>${e.displayDate||e.date||''}</b> · ${e.pm==='card'?'<svg width="40" height="28" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gld" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#C9A84C"/><stop offset="50%" style="stop-color:#F5D17A"/><stop offset="100%" style="stop-color:#A67C2E"/></linearGradient></defs><rect width="80" height="56" rx="6" fill="url(#gld)"/><rect x="0" y="16" width="80" height="12" fill="#5A3E00" opacity="0.5"/><rect x="8" y="6" width="16" height="12" rx="2" fill="#C9A84C" stroke="#A67C2E" stroke-width="1"/><rect x="10" y="8" width="12" height="8" rx="1" fill="#F5D17A"/><line x1="14" y1="8" x2="14" y2="16" stroke="#A67C2E" stroke-width="0.8"/><line x1="8" y1="12" x2="24" y2="12" stroke="#A67C2E" stroke-width="0.8"/><rect x="8" y="34" width="40" height="3" rx="1.5" fill="#fff" opacity="0.6"/><rect x="8" y="42" width="24" height="3" rx="1.5" fill="#fff" opacity="0.4"/><path d="M62 28 Q66 24 66 28 Q66 32 62 28" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.8"/><path d="M59 26 Q65 22 65 28 Q65 34 59 30" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.6"/></svg>':'<svg width="40" height="28" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="56" rx="6" fill="#003399"/><circle cx="40" cy="28" r="18" fill="#FFD700" opacity="0.15"/><circle cx="40" cy="28" r="14" fill="#FFD700"/><text x="40" y="35" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="900" fill="#003399">€</text><circle cx="8" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="8" r="3" fill="#FFD700" opacity="0.4"/><circle cx="8" cy="48" r="3" fill="#FFD700" opacity="0.4"/><circle cx="72" cy="48" r="3" fill="#FFD700" opacity="0.4"/></svg>'} · Pagato da <b>${e.payer}</b>${orig} · Divide: ${e.parts.join(', ')}</div></div>`;
   }).join('');
   document.querySelectorAll('.del-exp').forEach(el=>{el.addEventListener('click',function(){delExp(parseInt(this.dataset.i));});});
+  document.querySelectorAll('.edit-exp').forEach(el=>{el.addEventListener('click',function(){editExp(parseInt(this.dataset.i));});});
 }
 function delExp(i){if(!confirm('Eliminare questa spesa?'))return;CT().exps.splice(i,1);save();renderExps();}
 
@@ -459,9 +460,37 @@ function renderExpForm(){
   document.getElementById('ecur').innerHTML=curOpts(t.cur);
   document.getElementById('eparts').innerHTML=t.parts.map(p=>`<div class="chkrow"><input type="checkbox" id="ck-${p}" value="${p}" checked><label for="ck-${p}">${p}</label></div>`).join('');
   document.getElementById('ed').value='';document.getElementById('eamt').value='';document.getElementById('convinfo').textContent='';
+  editIdx=-1;
+  document.querySelector('#s-exp .btitle').textContent='Nuova spesa';
+  document.getElementById('btn-save-exp').innerHTML='<i class="ti ti-check"></i> Salva spesa';
   // Set today's date as default
   const today=new Date().toISOString().split('T')[0];document.getElementById('edate').value=today;
   curPM='cash';document.querySelectorAll('.paybtn').forEach(b=>b.classList.remove('active'));document.getElementById('pm-cash').classList.add('active');
+}
+function editExp(i){
+  editIdx=i;
+  const t=CT();const e=t.exps[i];
+  go('s-exp');
+  // Pre-fill form with existing expense data
+  setTimeout(()=>{
+    document.getElementById('ed').value=e.desc||'';
+    document.getElementById('ecat').value=e.cat||'altro';
+    document.getElementById('eamt').value=e.oamt||e.eur||'';
+    document.getElementById('ecur').value=e.ocur||t.cur;
+    document.getElementById('edate').value=e.date||'';
+    document.getElementById('epay').value=e.payer||t.parts[0];
+    // Set payment method
+    curPM=e.pm||'cash';
+    document.querySelectorAll('.paybtn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('pm-'+curPM).classList.add('active');
+    // Set participants
+    document.querySelectorAll('#eparts input[type=checkbox]').forEach(c=>{
+      c.checked=(e.parts||[]).includes(c.value);
+    });
+    // Update title
+    document.querySelector('#s-exp .btitle').textContent='Modifica spesa';
+    document.getElementById('btn-save-exp').innerHTML='<i class="ti ti-check"></i> Salva modifiche';
+  },50);
 }
 function selAll(v){document.querySelectorAll('#eparts input[type=checkbox]').forEach(c=>c.checked=v);}
 
@@ -492,7 +521,13 @@ async function addExp(){
   const btn=document.getElementById('btn-save-exp');btn.textContent='Salvataggio...';
   const rate=await getR(from,t.cur);
   if(from!==t.cur&&!rate){alert('Impossibile ottenere il cambio. Riprova.');btn.innerHTML='<i class="ti ti-check"></i> Salva spesa';return;}
-  t.exps.push({desc,cat,oamt:amt,ocur:from,eur:rate?amt*rate:amt,payer,parts,date:expdate,displayDate:new Date(expdate+'T00:00:00').toLocaleDateString('it-IT'),pm});
+  const expObj={desc,cat,oamt:amt,ocur:from,eur:rate?amt*rate:amt,payer,parts,date:expdate,displayDate:new Date(expdate+'T00:00:00').toLocaleDateString('it-IT'),pm};
+  if(editIdx>=0){
+    t.exps[editIdx]=expObj;
+    editIdx=-1;
+  } else {
+    t.exps.push(expObj);
+  }
   save();btn.innerHTML='<i class="ti ti-check"></i> Salva spesa';go('s-trip');
 }
 
