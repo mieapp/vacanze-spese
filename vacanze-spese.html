@@ -468,11 +468,11 @@ function renderExpForm(){
   curPM='cash';document.querySelectorAll('.paybtn').forEach(b=>b.classList.remove('active'));document.getElementById('pm-cash').classList.add('active');
 }
 function editExp(i){
-  editIdx=i;
   const t=CT();const e=t.exps[i];
   go('s-exp');
-  // Pre-fill form with existing expense data
+  // Pre-fill form with existing expense data - set editIdx AFTER go() resets it
   setTimeout(()=>{
+    editIdx=i;
     document.getElementById('ed').value=e.desc||'';
     document.getElementById('ecat').value=e.cat||'altro';
     document.getElementById('eamt').value=e.oamt||e.eur||'';
