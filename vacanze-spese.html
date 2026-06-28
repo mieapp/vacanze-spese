@@ -593,9 +593,9 @@ function shareWA(){
   setTimeout(()=>{document.getElementById('expfb').innerHTML='';},3000);
 }
 function expCSV(){
-  const t=CT();let csv='Data,Categoria,Descrizione,Metodo,Valuta originale,Importo originale,'+t.cur+',Pagato da,Partecipanti\n';
-  (t.exps||[]).forEach(e=>{csv+=`"${e.date}","${catBy(e.cat).l}","${e.desc}","${e.pm==='card'?'Carta':'Contanti'}","${e.ocur}",${e.oamt.toFixed(2)},${e.eur.toFixed(2)},"${e.payer}","${e.parts.join('; ')}"\n`;});
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  const t=CT();let csv='Data;Categoria;Descrizione;Metodo;Valuta originale;Importo originale;'+t.cur+';Pagato da;Partecipanti\n';
+  (t.exps||[]).forEach(e=>{csv+=`"${e.date}";"${catBy(e.cat).l}";"${e.desc}";"${e.pm==='card'?'Carta':'Contanti'}";"${e.ocur}";${e.oamt.toFixed(2)};${e.eur.toFixed(2)};"${e.payer}";"${e.parts.join(', ')}"\n`;});
+  const bom='\uFEFF';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bom+csv],{type:'text/csv;charset=utf-8;'}));
   a.download=t.name.replace(/\s+/g,'_')+'_spese.csv';a.click();
   document.getElementById('expfb').innerHTML='<div class="aok">CSV scaricato!</div>';
   setTimeout(()=>{document.getElementById('expfb').innerHTML='';},3000);
@@ -616,7 +616,7 @@ function expPDF(){
   y+=4;doc.setFont(undefined,'bold');doc.text('Spese per categoria',14,y);y+=7;doc.setFont(undefined,'normal');
   CAT.filter(c=>ct[c.id]>0).sort((a,b)=>ct[b.id]-ct[a.id]).forEach(c=>{doc.text(`  ${c.l}: ${t.cur} ${ct[c.id].toFixed(2)} (${((ct[c.id]/tot)*100).toFixed(0)}%)`,14,y);y+=6;});
   y+=4;doc.setFont(undefined,'bold');doc.text('Dettaglio spese',14,y);y+=7;doc.setFont(undefined,'normal');
-  (t.exps||[]).forEach(e=>{if(y>270){doc.addPage();y=20;}doc.text(`${e.date}  [${catBy(e.cat).l}]  ${e.desc}  —  ${t.cur} ${e.eur.toFixed(2)}  (${e.payer})`,14,y);y+=6;});
+  (t.exps||[]).forEach(e=>{if(y>270){doc.addPage();y=20;}const pmtxt=e.pm==='card'?'Carta':'Contanti';doc.text(`${e.date}  [${catBy(e.cat).l}]  ${e.desc}  —  ${t.cur} ${e.eur.toFixed(2)}  (${e.payer}, ${pmtxt})`,14,y);y+=6;});
   doc.save(t.name.replace(/\s+/g,'_')+'_spese.pdf');
   document.getElementById('expfb').innerHTML='<div class="aok">PDF scaricato!</div>';
   setTimeout(()=>{document.getElementById('expfb').innerHTML='';},3000);
