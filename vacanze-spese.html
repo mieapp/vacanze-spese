@@ -41,10 +41,8 @@ label{font-size:13px;color:var(--b600);font-weight:500;display:block;margin-bott
 .chip .rm{cursor:pointer;color:#E74C3C;font-size:18px;line-height:1;}
 .chip.selc{cursor:pointer;}
 .chip.selc.on{background:var(--b400);border-color:var(--b400);color:#fff;}
-.chkrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--b50);}
-.chkrow:last-child{border-bottom:none;}
-.chkrow input[type=checkbox]{width:20px;height:20px;flex-shrink:0;accent-color:var(--b400);margin-bottom:0;}
-.chkrow label{margin:0;font-size:15px;color:#222;font-weight:400;}
+.partchip{display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;background:var(--b50);border:2px solid var(--b100);border-radius:25px;font-size:15px;font-weight:500;margin:4px;color:var(--b800);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s;}
+.partchip.on{background:var(--b400);border-color:var(--b400);color:#fff;}
 .catbadge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:8px;margin-right:4px;font-weight:500;}
 .balrow{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--b50);}
 .balrow:last-child{border-bottom:none;}
@@ -191,7 +189,7 @@ label{font-size:13px;color:var(--b600);font-weight:500;display:block;margin-bott
   <div class="card">
     <div class="st">Divide tra</div>
     <div id="eparts"></div>
-    <div style="margin-top:12px;display:flex;gap:8px;"><button class="btns btng" id="btn-all">Tutti</button><button class="btns btng" id="btn-none">Nessuno</button></div>
+    <div style="margin-top:12px;display:flex;gap:8px;"><button class="btns btnp" id="btn-all">✓ Tutti</button><button class="btns" id="btn-none">✗ Nessuno</button></div>
   </div>
   <button class="btn btnp" id="btn-save-exp"><i class="ti ti-check"></i> Salva spesa</button>
 </div>
@@ -458,7 +456,7 @@ function renderExpForm(){
   document.getElementById('ecat').innerHTML=CAT.map(c=>`<option value="${c.id}">${c.l}</option>`).join('');
   document.getElementById('epay').innerHTML=t.parts.map(p=>`<option value="${p}">${p}</option>`).join('');
   document.getElementById('ecur').innerHTML=curOpts(t.cur);
-  document.getElementById('eparts').innerHTML=t.parts.map(p=>`<div class="chkrow"><input type="checkbox" id="ck-${p}" value="${p}" checked><label for="ck-${p}">${p}</label></div>`).join('');
+  document.getElementById('eparts').innerHTML='<div style="display:flex;flex-wrap:wrap;margin-bottom:4px;">'+t.parts.map(p=>`<div class="partchip on" data-name="${p}" onclick="togglePart(this)">${p}</div>`).join('')+'</div>';
   document.getElementById('ed').value='';document.getElementById('eamt').value='';document.getElementById('convinfo').textContent='';
   editIdx=-1;
   document.querySelector('#s-exp .btitle').textContent='Nuova spesa';
@@ -484,15 +482,21 @@ function editExp(i){
     document.querySelectorAll('.paybtn').forEach(b=>b.classList.remove('active'));
     document.getElementById('pm-'+curPM).classList.add('active');
     // Set participants
-    document.querySelectorAll('#eparts input[type=checkbox]').forEach(c=>{
-      c.checked=(e.parts||[]).includes(c.value);
+    document.querySelectorAll('.partchip').forEach(c=>{
+      if((e.parts||[]).includes(c.dataset.name)) c.classList.add('on');
+      else c.classList.remove('on');
     });
     // Update title
     document.querySelector('#s-exp .btitle').textContent='Modifica spesa';
     document.getElementById('btn-save-exp').innerHTML='<i class="ti ti-check"></i> Salva modifiche';
   },50);
 }
-function selAll(v){document.querySelectorAll('#eparts input[type=checkbox]').forEach(c=>c.checked=v);}
+function selAll(v){
+  document.querySelectorAll('.partchip').forEach(c=>{
+    if(v) c.classList.add('on'); else c.classList.remove('on');
+  });
+}
+function togglePart(el){el.classList.toggle('on');}
 
 async function getR(f,t2){
   if(f===t2)return 1;const k=f+'_'+t2;if(rc[k])return rc[k];
@@ -514,7 +518,7 @@ async function addExp(){
   const payer=document.getElementById('epay').value;
   const expdate=document.getElementById('edate').value||new Date().toISOString().split('T')[0];
   const pm=curPM;
-  const parts=Array.from(document.querySelectorAll('#eparts input:checked')).map(c=>c.value);
+  const parts=Array.from(document.querySelectorAll('.partchip.on')).map(c=>c.dataset.name);
   if(!desc){alert('Inserisci una descrizione');return;}
   if(!amt||amt<=0){alert('Inserisci un importo valido');return;}
   if(!parts.length){alert('Seleziona almeno un partecipante');return;}
