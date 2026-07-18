@@ -303,16 +303,6 @@ document.getElementById('cfu').addEventListener('change',function(){
   };
   r.readAsDataURL(f);
 });
-TH.forEach(t=>{
-  document.getElementById('th-'+t.id).addEventListener('click',function(){
-    pendingCoverTheme=t.id; pendingCoverDataUrl=null;
-    document.querySelectorAll('.ctheme').forEach(e=>e.classList.remove('on'));
-    this.classList.add('on');
-    document.getElementById('cfu').value='';
-    document.getElementById('cpw').style.display='none';
-  });
-});
-
 function addP(){
   const inp=document.getElementById('np'); const n=inp.value.trim();
   if(!n||newParticipants.includes(n)){inp.value='';return;}
@@ -780,6 +770,15 @@ document.getElementById('g-tab-categorie').addEventListener('click',()=>{
 // Init selects
 document.getElementById('tc').innerHTML=curOpts('EUR');
 document.getElementById('cth').innerHTML=TH.map(t=>`<div class="ctheme" id="th-${t.id}" style="background:${t.bg};">${t.e}</div>`).join('');
+TH.forEach(t=>{
+  document.getElementById('th-'+t.id).addEventListener('click',function(){
+    pendingCoverTheme=t.id; pendingCoverDataUrl=null;
+    document.querySelectorAll('.ctheme').forEach(e=>e.classList.remove('on'));
+    this.classList.add('on');
+    document.getElementById('cfu').value='';
+    document.getElementById('cpw').style.display='none';
+  });
+});
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
